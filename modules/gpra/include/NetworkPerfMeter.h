@@ -40,7 +40,7 @@
 #include "NetworkDelayController.h"
 #include "NetworkTargetRateController.h"
 #include "NetworkEstimatorUtils.h"
-#include "webrtc_defs.h"
+//#include "webrtc_defs.h"       //Jianlin: it conflicts with the definition in webrtc stack. Please consider not exposing it in your header..
 
 //#include "webrtc/modules/remote_bitrate_estimator/include/remote_bitrate_estimator.h"
 //#include "webrtc/modules/congestion_controller/delay_based_bwe.h"
@@ -117,7 +117,6 @@ namespace webrtc {
             return false;
         }
 
-        // Define similar calls like DelayBasedBwe
         webrtc::DelayBasedBwe::Result IncomingPacketFeedbackVector(
                                 const std::vector<webrtc::PacketFeedback>& packet_feedback_vector);
         void OnRttUpdate(int64_t avg_rtt_ms, int64_t max_rtt_ms);
@@ -126,6 +125,8 @@ namespace webrtc {
         int64_t GetProbingIntervalMs() const;
         void SetCurrentOffsetMs(int64_t offset_ms);
         void SetBitrateEstimatorWindowSize(int init_window, int rate_window);
+        // Jianlin: Please implement this................
+        int64_t GetExpectedBwePeriodMs() const {return 0;}
         //-- IEstimatorLogger::
         void updateTrace();
         //-- CallStatsObserver::
