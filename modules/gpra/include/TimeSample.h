@@ -73,9 +73,9 @@ class TimeVal {
       FILETIME        ft;
       LARGE_INTEGER   li;
       __int64         t;
-      static int      tzflag;
+      //static int      tzflag;  //Jianlin: commenting out for un-used variable warning
 
-      if (&mTv)
+      //if (&mTv)      //Jianlin: commenting out as this always evaluate to true, avoid build warnings.
       {
         GetSystemTimeAsFileTime(&ft);
         li.LowPart = ft.dwLowDateTime;
