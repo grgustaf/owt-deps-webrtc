@@ -40,7 +40,8 @@
 #include "NetworkDelayController.h"
 #include "NetworkTargetRateController.h"
 #include "NetworkEstimatorUtils.h"
-//#include "webrtc_defs.h"       //Jianlin: it conflicts with the definition in webrtc stack. Please consider not exposing it in your header..
+// Include below for standlone lib generation, to be commented while integrating with WebRTC stack
+//#include "webrtc_defs.h"
 
 //#include "webrtc/modules/remote_bitrate_estimator/include/remote_bitrate_estimator.h"
 //#include "webrtc/modules/congestion_controller/delay_based_bwe.h"
@@ -117,16 +118,19 @@ namespace webrtc {
             return false;
         }
 
-        webrtc::DelayBasedBwe::Result IncomingPacketFeedbackVector(
-                                const std::vector<webrtc::PacketFeedback>& packet_feedback_vector);
+        // Define similar calls like DelayBasedBwe
+        DelayBasedBwe::Result IncomingPacketFeedbackVector(
+            const std::vector<PacketFeedback>& packet_feedback_vector,
+            uint32_t acked_bitrate_bps,
+            int64_t at_time_ms);
         void OnRttUpdate(int64_t avg_rtt_ms, int64_t max_rtt_ms);
         void SetStartBitrate(int start_bitrate_bps);
         void SetMinBitrate(int min_bitrate_bps);
         int64_t GetProbingIntervalMs() const;
         void SetCurrentOffsetMs(int64_t offset_ms);
         void SetBitrateEstimatorWindowSize(int init_window, int rate_window);
-        // Jianlin: Please implement this................
-        int64_t GetExpectedBwePeriodMs() const {return 0;}
+
+        int64_t GetExpectedBwePeriodMs() const;
         //-- IEstimatorLogger::
         void updateTrace();
         //-- CallStatsObserver::
