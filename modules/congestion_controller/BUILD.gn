@@ -39,8 +39,8 @@ rtc_static_library("congestion_controller") {
     suppressed_configs += [ "//build/config/clang:find_bad_constructs" ]
   }
 
-  #libs = ["gpra_lib.lib",
-  #]
+  libs = ["gpra_lib.lib",
+  ]
 
   deps = [
     ":transport_feedback",
