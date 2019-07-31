@@ -535,6 +535,7 @@ void SendSideCongestionController::MaybeTriggerOnNetworkChanged() {
   int64_t rtt;
   bool estimate_changed = bitrate_controller_->GetNetworkParameters(
       &bitrate_bps, &fraction_loss, &rtt);
+  printf("\n***> MaybeTriggerOnNetworkChanges: bitrate_bps = %d\n\n", bitrate_bps);
   if (estimate_changed) {
     pacer_->SetEstimatedBitrate(bitrate_bps);
     {
@@ -551,8 +552,10 @@ void SendSideCongestionController::MaybeTriggerOnNetworkChanged() {
     rtc::CritScope lock(&network_state_lock_);
     bitrate_bps = congestion_window_pushback_controller_->UpdateTargetBitrate(
         bitrate_bps);
+    printf("\n***> pushback bitrate_bps = %d\n\n", bitrate_bps);
   } else if (!pacer_pushback_experiment_) {
     bitrate_bps = IsSendQueueFull() ? 0 : bitrate_bps;
+    printf("\n***> pacer experiment bitrate_bps = %d\n\n", bitrate_bps);
   } else {
     int64_t queue_length_ms = pacer_->ExpectedQueueTimeMs();
 
@@ -566,6 +569,7 @@ void SendSideCongestionController::MaybeTriggerOnNetworkChanged() {
 
     bitrate_bps *= encoding_rate_;
     bitrate_bps = bitrate_bps < 50000 ? 0 : bitrate_bps;
+    printf("\n***> else case bitrate_bps = %d\n\n", bitrate_bps);
   }
 
   if (HasNetworkParametersToReportChanged(bitrate_bps, fraction_loss, rtt)) {
@@ -577,10 +581,14 @@ void SendSideCongestionController::MaybeTriggerOnNetworkChanged() {
     {
       rtc::CritScope cs(&observer_lock_);
       if (observer_) {
+        printf("\n***> calling OnNetworkChanged\n\n");
         observer_->OnNetworkChanged(bitrate_bps, fraction_loss, rtt,
                                     probing_interval_ms);
       }
     }
+  }
+  else {
+    printf("\n***> network parameters didn't change, not reporting\n\n");
   }
 }
 
