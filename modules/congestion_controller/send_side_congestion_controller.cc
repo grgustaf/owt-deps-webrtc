@@ -98,6 +98,8 @@ static void ClampBitrates(int* bitrate_bps,
     *max_bitrate_bps = std::max(*min_bitrate_bps, *max_bitrate_bps);
   if (*bitrate_bps > 0)
     *bitrate_bps = std::max(*min_bitrate_bps, *bitrate_bps);
+  // GRG: Seems very suspicious that this function doesn't limit bitrate_bps to max_bitrate_bps
+  // GRG: Also leave max_bitrate_bps and bitrate_bps alone if they are <= 0; why?
 }
 
 std::vector<webrtc::PacketFeedback> ReceivedPacketFeedbackVector(

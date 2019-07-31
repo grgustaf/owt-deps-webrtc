@@ -21,6 +21,7 @@ int GetMinBitrateBps() {
   constexpr int kMinBitrateBps = 10000;
   if (webrtc::field_trial::IsEnabled("WebRTC-Audio-SendSideBwe") &&
       !webrtc::field_trial::IsEnabled("WebRTC-Audio-SendSideBwe-For-Video")) {
+        // GRG: This logic seems weird, "audio for video" sounds like audio *should* bitrate be used
     return kAudioMinBitrateBps;
   }
   return kMinBitrateBps;
