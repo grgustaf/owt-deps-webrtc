@@ -267,6 +267,7 @@ void SendSideCongestionController::OnNetworkRouteChanged(
     acknowledged_bitrate_estimator_.reset(new AcknowledgedBitrateEstimator());
     delay_based_bwe_->SetStartBitrate(bitrate_bps);
     delay_based_bwe_->SetMinBitrate(min_bitrate_bps);
+    delay_based_bwe_->SetMaxBitrate(max_bitrate_bps);
   }
   {
     rtc::CritScope cs(&probe_lock_);
