@@ -205,6 +205,7 @@ void SendSideBandwidthEstimation::UpdateReceiverEstimate(int64_t now_ms,
 void SendSideBandwidthEstimation::UpdateDelayBasedEstimate(
     int64_t now_ms,
     uint32_t bitrate_bps) {
+  RTC_LOG(LS_ERROR) << "Debug: delay estimate " << bitrate_bps;
   delay_based_bitrate_bps_ = bitrate_bps;
   CapBitrateToThresholds(now_ms, current_bitrate_bps_);
 }
@@ -308,6 +309,7 @@ void SendSideBandwidthEstimation::UpdateEstimate(int64_t now_ms) {
       min_bitrate_history_.clear();
       min_bitrate_history_.push_back(
           std::make_pair(now_ms, current_bitrate_bps_));
+      RTC_LOG(LS_ERROR) << "Debug: loss estimate " << new_bitrate << " current " << current_bitrate_bps_;
       CapBitrateToThresholds(now_ms, new_bitrate);
       return;
     }
@@ -418,6 +420,8 @@ void SendSideBandwidthEstimation::CapBitrateToThresholds(int64_t now_ms,
   double delay_weight = ::strtod(experiment_string.c_str(), nullptr);
   double delay_fraction = delay_weight / 100.0;
   double lost_fraction = 1 - delay_fraction;
+  RTC_LOG(LS_ERROR) << "Debug: delay weight " << delay_weight << " fraction " << delay_fraction << " bitrate "
+    << bitrate_bps << " delay " << delay_based_bitrate_bps_ << " bwe_incoming " << bwe_incoming_;
 
   if (bwe_incoming_ > 0 && bitrate_bps > bwe_incoming_) {
     bitrate_bps = bwe_incoming_;
