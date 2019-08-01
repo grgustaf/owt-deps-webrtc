@@ -550,12 +550,12 @@ void SendSideCongestionController::MaybeTriggerOnNetworkChanged() {
     RTC_LOG(LS_ERROR) << "Debug: (1/4) network down, bitrate_bps 0";
   } else if (congestion_window_pushback_controller_) {
     rtc::CritScope lock(&network_state_lock_);
-    RTC_LOG(LS_ERROR) << "Debug: (2/4) updating target bitrate, bitrate_bps" << bitrate_bps;
+    RTC_LOG(LS_ERROR) << "Debug: (2/4) updating target bitrate, bitrate_bps " << bitrate_bps;
     bitrate_bps = congestion_window_pushback_controller_->UpdateTargetBitrate(
         bitrate_bps);
   } else if (!pacer_pushback_experiment_) {
     bitrate_bps = IsSendQueueFull() ? 0 : bitrate_bps;
-      RTC_LOG(LS_ERROR) << "Debug: (3/4) no pacer pushback experiment, bitrate_bps" << bitrate_bps;
+      RTC_LOG(LS_ERROR) << "Debug: (3/4) no pacer pushback experiment, bitrate_bps " << bitrate_bps;
   } else {
     int64_t queue_length_ms = pacer_->ExpectedQueueTimeMs();
 

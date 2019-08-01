@@ -418,7 +418,7 @@ void SendSideBandwidthEstimation::CapBitrateToThresholds(int64_t now_ms,
   std::string experiment_string =
       webrtc::field_trial::FindFullName("OWT-DelayBweWeight");
   double delay_weight = ::strtod(experiment_string.c_str(), nullptr);
-  RTC_LOG(LS_ERROR) << "Debug: experiment string '" << experiment_string << "' delay_weight << " << delay_weight;
+  RTC_LOG(LS_ERROR) << "Debug: experiment string '" << experiment_string << "' delay_weight " << delay_weight;
   double delay_fraction = delay_weight / 100.0;
   double lost_fraction = 1 - delay_fraction;
   RTC_LOG(LS_ERROR) << "Debug: fraction " << delay_fraction << " bitrate "
@@ -427,7 +427,10 @@ void SendSideBandwidthEstimation::CapBitrateToThresholds(int64_t now_ms,
   if (bwe_incoming_ > 0 && bitrate_bps > bwe_incoming_) {
     bitrate_bps = bwe_incoming_;
   }
-  if (delay_based_bitrate_bps_ > 0 && bitrate_bps > delay_based_bitrate_bps_) {
+  if (delay_weight == 100) {
+    bitrate_bps = delay_based_bitrate_bps_;
+  }
+  else if (delay_based_bitrate_bps_ > 0 && bitrate_bps > delay_based_bitrate_bps_) {
     if (delay_weight <= 100 && delay_weight >= 0)
       bitrate_bps = bitrate_bps * lost_fraction +
                     delay_based_bitrate_bps_ * delay_fraction;
