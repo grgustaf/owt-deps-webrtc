@@ -300,7 +300,8 @@ int32_t VideoSender::AddVideoFrame(const VideoFrame& videoFrame,
   int32_t ret =
       _encoder->Encode(converted_frame, codecSpecificInfo, next_frame_types);
   if (ret < 0) {
-    RTC_LOG(LS_ERROR) << "Failed to encode frame. Error code: " << ret;
+    // GRG: This is just to quiet the logs; maybe this really should remain an error
+    RTC_LOG(LS_WARNING) << "Failed to encode frame. Error code: " << ret;
     //return ret;
   }
 
