@@ -327,7 +327,8 @@ bool RTPSenderVideo::SendVideo(enum VideoCodecType video_type,
       }
       if (video_type == kVideoCodecH264) {
         last_packet->SetExtension<PictureId>(
-            video_header->picture_id);
+            absl::get<RTPVideoHeaderH264>(video_header->video_type_header)
+                .picture_id);
       }
     }
 
