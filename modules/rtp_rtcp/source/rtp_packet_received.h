@@ -28,6 +28,8 @@ class RtpPacketReceived : public RtpPacket {
   RtpPacketReceived(const RtpPacketReceived& packet);
   RtpPacketReceived(RtpPacketReceived&& packet);
 
+  void Log(const char *label) const;
+
   RtpPacketReceived& operator=(const RtpPacketReceived& packet);
   RtpPacketReceived& operator=(RtpPacketReceived&& packet);
 

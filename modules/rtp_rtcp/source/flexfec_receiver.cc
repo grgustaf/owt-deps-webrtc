@@ -60,6 +60,8 @@ FlexfecReceiver::~FlexfecReceiver() = default;
 void FlexfecReceiver::OnRtpPacket(const RtpPacketReceived& packet) {
   RTC_DCHECK_RUN_ON(&sequence_checker_);
 
+  packet.Log("FlexFEC");
+
   // If this packet was recovered, it might be originating from
   // ProcessReceivedPacket in this object. To avoid lifetime issues with
   // |recovered_packets_|, we therefore break the cycle here.

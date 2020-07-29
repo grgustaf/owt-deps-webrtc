@@ -648,6 +648,8 @@ void RtpVideoStreamReceiver::OnRecoveredPacket(const uint8_t* rtp_packet,
 void RtpVideoStreamReceiver::OnRtpPacket(const RtpPacketReceived& packet) {
   RTC_DCHECK_RUN_ON(&worker_task_checker_);
 
+  packet.Log("Video");
+
   if (!receiving_) {
     return;
   }

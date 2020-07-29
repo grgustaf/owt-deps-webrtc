@@ -17,6 +17,7 @@
 
 #include "modules/rtp_rtcp/source/rtp_header_extensions.h"
 #include "rtc_base/numerics/safe_conversions.h"
+#include "rtc_base/logging.h"
 
 namespace webrtc {
 
@@ -32,6 +33,12 @@ RtpPacketReceived& RtpPacketReceived::operator=(RtpPacketReceived&& packet) =
     default;
 
 RtpPacketReceived::~RtpPacketReceived() {}
+
+void RtpPacketReceived::Log(const char *label) const {
+    RTC_LOG(LS_ERROR) << "RTP " << (this->PayloadType() & 0xff) << "-" <<
+        this->SequenceNumber() << " (" <<
+        this->PayloadType() << ") " << label;
+}
 
 void RtpPacketReceived::GetHeader(RTPHeader* header) const {
   header->markerBit = Marker();

@@ -41,6 +41,8 @@ RtxReceiveStream::RtxReceiveStream(
 RtxReceiveStream::~RtxReceiveStream() = default;
 
 void RtxReceiveStream::OnRtpPacket(const RtpPacketReceived& rtx_packet) {
+  rtx_packet.Log("RTX");
+
   if (rtp_receive_statistics_) {
     rtp_receive_statistics_->OnRtpPacket(rtx_packet);
   }
