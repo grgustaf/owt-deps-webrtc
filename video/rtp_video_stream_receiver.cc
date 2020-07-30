@@ -739,6 +739,8 @@ bool RtpVideoStreamReceiver::IsDecryptable() const {
   return frames_decryptable_.load();
 }
 
+#define PKT(x) ((x)->payload_type & 0xff) << "-" << (x)->seq_num
+
 void RtpVideoStreamReceiver::OnInsertedPacket(
     video_coding::PacketBuffer::InsertResult result) {
   video_coding::PacketBuffer::Packet* first_packet = nullptr;
@@ -749,7 +751,10 @@ void RtpVideoStreamReceiver::OnInsertedPacket(
   RtpPacketInfos::vector_type packet_infos;
 
   bool frame_boundary = true;
+  std::ostringstream oss;
+  oss << "(" << result.packets.size() << ")";
   for (auto& packet : result.packets) {
+    oss << " " << PKT(packet);
     // PacketBuffer promisses frame boundaries are correctly set on each
     // packet. Document that assumption with the DCHECKs.
     RTC_DCHECK_EQ(frame_boundary, packet->is_first_packet_in_frame());
@@ -781,6 +786,8 @@ void RtpVideoStreamReceiver::OnInsertedPacket(
         // Failed to assemble a frame. Discard and continue.
         continue;
       }
+
+      RTC_LOG(LS_ERROR) << "Assembled:" << oss.str();
 
       const video_coding::PacketBuffer::Packet& last_packet = *packet;
       OnAssembledFrame(std::make_unique<video_coding::RtpFrameObject>(

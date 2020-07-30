@@ -160,15 +160,27 @@ void FlexfecReceiver::ProcessReceivedPacket(
     const ForwardErrorCorrection::ReceivedPacket& received_packet) {
   RTC_DCHECK_RUN_ON(&sequence_checker_);
 
+  int pre = recovered_packets_.size();
+
   // Decode.
   erasure_code_->DecodeFec(received_packet, &recovered_packets_);
+
+  int post = recovered_packets_.size();
+  int returned = 0;
+  static int total = 0;
+
+  std::ostringstream oss;
 
   // Return recovered packets through callback.
   for (const auto& recovered_packet : recovered_packets_) {
     RTC_CHECK(recovered_packet);
+    // GRG: most packets already returned
     if (recovered_packet->returned) {
+      ++returned;
       continue;
     }
+
+    oss << " " << (recovered_packet->ssrc & 0xff) << "-" << recovered_packet->seq_num;
     ++packet_counter_.num_recovered_packets;
     // Set this flag first, since OnRecoveredPacket may end up here
     // again, with the same packet.
@@ -186,6 +198,14 @@ void FlexfecReceiver::ProcessReceivedPacket(
                           << " from FlexFEC stream with SSRC: " << ssrc_ << ".";
       last_recovered_packet_ms_ = now_ms;
     }
+  }
+
+  int added = post - returned;
+  total += added;
+
+  if (added > 0) {
+    RTC_LOG(LS_ERROR) << "Recovered " << pre << "->" << post << " (" <<
+      (post - returned) << " new of " << total << ") " << oss.str();
   }
 }
 

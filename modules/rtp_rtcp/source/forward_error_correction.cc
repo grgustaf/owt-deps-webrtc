@@ -386,6 +386,9 @@ void ForwardErrorCorrection::InsertMediaPacket(
   UpdateCoveringFecPackets(*recovered_packet_ptr);
 }
 
+//#define PKT(x) ((x)->ssrc & 0xff) << "/" << (x)->seq_num
+#define PKT(x) (x)->seq_num
+
 void ForwardErrorCorrection::UpdateCoveringFecPackets(
     const RecoveredPacket& packet) {
   for (auto& fec_packet : received_fec_packets_) {
@@ -396,6 +399,17 @@ void ForwardErrorCorrection::UpdateCoveringFecPackets(
         (*protected_it)->seq_num == packet.seq_num) {
       // Found an FEC packet which is protecting |packet|.
       (*protected_it)->pkt = packet.pkt;
+      std::ostringstream oss;
+      oss << "FEC " << (fec_packet->ssrc & 0xff) << "-" <<
+        fec_packet->seq_num << " protects";
+      for (auto prot_it = fec_packet->protected_packets.begin(); prot_it != fec_packet->protected_packets.end(); prot_it++) {
+        oss << " " << PKT(*prot_it);
+        if (prot_it == protected_it) {
+          oss << "*";
+        }
+      }
+      oss << " Added: " << PKT(&packet);
+      RTC_LOG(LS_ERROR) << oss.str();
     }
   }
 }
