@@ -62,18 +62,30 @@ void FlexfecReceiver::OnRtpPacket(const RtpPacketReceived& packet) {
 
   packet.Log("FlexFEC");
 
+  static int flex_recv = 0;
+  static int flex_drop_recovered = 0;
+  static int flex_drop_not_received = 0;
+  if (++flex_recv % 1000 == 0) {
+    RTC_LOG(LS_ERROR) << "FLEX received: " << flex_recv << ", dropped recovered: " <<
+      flex_drop_recovered << ", drop not received: " << flex_drop_not_received;
+  }
+
   // If this packet was recovered, it might be originating from
   // ProcessReceivedPacket in this object. To avoid lifetime issues with
   // |recovered_packets_|, we therefore break the cycle here.
   // This might reduce decoding efficiency a bit, since we can't disambiguate
   // recovered packets by RTX from recovered packets by FlexFEC.
-  if (packet.recovered())
+  if (packet.recovered()) {
+    ++flex_drop_recovered;
     return;
+  }
 
   std::unique_ptr<ForwardErrorCorrection::ReceivedPacket> received_packet =
       AddReceivedPacket(packet);
-  if (!received_packet)
+  if (!received_packet) {
+    ++flex_drop_not_received;
     return;
+  }
 
   ProcessReceivedPacket(*received_packet);
 }
