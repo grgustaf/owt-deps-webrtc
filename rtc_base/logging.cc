@@ -557,6 +557,13 @@ void LogSink::OnLogMessage(const std::string& msg,
 
 void LogSink::OnLogMessage(const std::string& msg,
                            LoggingSeverity /* severity */) {
-  OnLogMessage(msg);
+  static FILE *f = nullptr;
+  if (!f) {
+    f = fopen("out.log", "w");
+  }
+  if (f) {
+    fwrite(msg.c_str(), msg.size(), 1, f);
+  }
+//  OnLogMessage(msg);
 }
 }  // namespace rtc
