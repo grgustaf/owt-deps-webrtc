@@ -498,8 +498,10 @@ void RtpVideoStreamReceiver::OnReceivedPayloadData(
 
   ParseGenericDependenciesResult generic_descriptor_state =
       ParseGenericDependenciesExtension(rtp_packet, &video_header);
-  if (generic_descriptor_state == kDropPacket)
+  if (generic_descriptor_state == kDropPacket) {
+    RTC_LOG(LS_ERROR) << "Generic Drop Packet";
     return;
+  }
 
   // Color space should only be transmitted in the last packet of a frame,
   // therefore, neglect it otherwise so that last_color_space_ is not reset by
@@ -692,7 +694,9 @@ void RtpVideoStreamReceiver::OnRtpPacket(const RtpPacketReceived& packet) {
     rtp_receive_statistics_->OnRtpPacket(packet);
   }
 
+  int count = 0;
   for (RtpPacketSinkInterface* secondary_sink : secondary_sinks_) {
+    RTC_LOG(LS_ERROR) << "Calling secondary #" << ++count << ": ";
     secondary_sink->OnRtpPacket(packet);
   }
 }
@@ -799,8 +803,10 @@ void RtpVideoStreamReceiver::OnInsertedPacket(
           std::move(bitstream)));
     }
   }
+
   RTC_DCHECK(frame_boundary);
   if (result.buffer_cleared) {
+    RTC_LOG(LS_ERROR) << "Requesting Key Frame";
     RequestKeyFrame();
   }
 }

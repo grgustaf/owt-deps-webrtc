@@ -104,6 +104,7 @@ PacketBuffer::InsertResult PacketBuffer::InsertPacket(
 
   if (buffer_[index] != nullptr) {
     // Duplicate packet, just delete the payload.
+    RTC_LOG(LS_ERROR) << "DUPLICATE PACKET:" << packet->payload_type << "-" << packet->seq_num;
     if (buffer_[index]->seq_num == packet->seq_num) {
       return result;
     }
@@ -117,7 +118,7 @@ PacketBuffer::InsertResult PacketBuffer::InsertPacket(
     if (buffer_[index] != nullptr) {
       // Clear the buffer, delete payload, and return false to signal that a
       // new keyframe is needed.
-      RTC_LOG(LS_WARNING) << "Clear PacketBuffer and request key frame.";
+      RTC_LOG(LS_ERROR) << "Clear PacketBuffer and request key frame.";
       Clear();
       result.buffer_cleared = true;
       return result;

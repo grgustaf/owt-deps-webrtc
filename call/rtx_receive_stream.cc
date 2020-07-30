@@ -65,6 +65,8 @@ void RtxReceiveStream::OnRtpPacket(const RtpPacketReceived& rtx_packet) {
   media_packet.SetSsrc(media_ssrc_);
   media_packet.SetSequenceNumber((payload[0] << 8) + payload[1]);
   media_packet.SetPayloadType(it->second);
+  RTC_LOG(LS_ERROR) << "RTX Recovered media packet " << media_packet.PayloadType() << "-" <<
+    media_packet.SequenceNumber();
   media_packet.set_recovered(true);
   media_packet.set_arrival_time_ms(rtx_packet.arrival_time_ms());
 
