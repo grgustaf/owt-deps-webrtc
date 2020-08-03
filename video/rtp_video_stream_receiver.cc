@@ -763,12 +763,30 @@ void RtpVideoStreamReceiver::OnInsertedPacket(
   int packet_count = 0;
 
   bool frame_boundary = true;
+  int frame_count = 0;
+  std::ostringstream oss;
+
+  // true if this frame is composed of all contiguous packets in order
+  bool contiguous = true;
+  // true if this frame follows previous frame's packets with no gap
+  bool sequential = false;
+  // NOTE: wraparound ignored in both cases, so it will so up as occasional discontinuity
+
+  uint16_t first_pkt = 0;
+  static uint16_t last_pkt = 0;
   for (auto& packet : result.packets) {
+    ++frame_count;
+    oss << " " << packet->seq_num;
     // PacketBuffer promisses frame boundaries are correctly set on each
     // packet. Document that assumption with the DCHECKs.
     RTC_DCHECK_EQ(frame_boundary, packet->is_first_packet_in_frame());
     ++packet_count;
     if (packet->is_first_packet_in_frame()) {
+      first_pkt = packet->seq_num;
+      if (first_pkt == last_pkt + 1) {
+        sequential = true;
+      }
+
       first_packet = packet.get();
       max_nack_count = packet->times_nacked;
       min_recv_time = packet->packet_info.receive_time_ms();
@@ -776,12 +794,16 @@ void RtpVideoStreamReceiver::OnInsertedPacket(
       payloads.clear();
       packet_infos.clear();
     } else {
+      if (last_pkt + 1 != packet->seq_num) {
+        contiguous = false;
+      }
       max_nack_count = std::max(max_nack_count, packet->times_nacked);
       min_recv_time =
           std::min(min_recv_time, packet->packet_info.receive_time_ms());
       max_recv_time =
           std::max(max_recv_time, packet->packet_info.receive_time_ms());
     }
+    last_pkt = packet->seq_num;
     payloads.emplace_back(packet->video_payload);
     packet_infos.push_back(packet->packet_info);
 
@@ -796,6 +818,63 @@ void RtpVideoStreamReceiver::OnInsertedPacket(
         // Failed to assemble a frame. Discard and continue.
         continue;
       }
+
+      static uint32_t total_assembled = 0;
+      total_assembled += frame_count;
+
+      std::ostringstream oss_log;
+      oss_log << first_pkt << "-" << last_pkt;
+
+      RTC_LOG(LS_ERROR) <<  "Assembled " <<
+        (sequential ? "      " : "[GAP] ") <<
+        (frame_count < 10 ? " " : "") <<
+        frame_count << " (" << total_assembled << ") " <<
+        (contiguous ? oss_log.str() : oss.str());
+
+      if (frame_count != result.packets.size()) {
+        RTC_LOG(LS_ERROR) << "Warning: Didn't use all result packets";
+      }
+
+
+#ifdef FRAME_HISTORY
+      // record history of frames
+      static std::vector<std::pair<uint16_t, uint16_t>> vpf;
+      vpf.push_back(std::make_pair(first_packet->seq_num, packet->seq_num));
+#endif
+
+      static auto clock = Clock::GetRealTimeClock();
+      static int64_t start_time = 0;
+      static int frame_count = 0;
+      static int total_time = 0;
+      auto now = clock->TimeInMilliseconds();
+
+      const int fps_sample_period_sec = 10;
+      if (now - start_time > fps_sample_period_sec * 1000) {
+        if (frame_count) {
+          total_time += fps_sample_period_sec;
+          int min = total_time / 60;
+          int sec = total_time % 60;
+          char *zero = sec < 10 ? "0":"";
+          RTC_LOG(LS_ERROR) <<
+            "[" << min << ":" << zero << sec << "]" <<
+            " FPS = " << frame_count / fps_sample_period_sec <<
+            " (" << frame_count << " frames in " << fps_sample_period_sec << " sec)";
+        }
+        frame_count = 0;
+        start_time = now;
+
+#ifdef FRAME_HISTORY
+        std::ostringstream history;
+        history << "\nFrame History:\n";
+        for (auto kv : vpf) {
+          history << kv.first << "-" << kv.second << " ";
+        }
+
+        RTC_LOG(LS_ERROR) << history.str();
+        vpf.clear();
+#endif
+      }
+      ++frame_count;
 
       const video_coding::PacketBuffer::Packet& last_packet = *packet;
       OnAssembledFrame(std::make_unique<video_coding::RtpFrameObject>(
@@ -817,7 +896,6 @@ void RtpVideoStreamReceiver::OnInsertedPacket(
           RtpPacketInfos(std::move(packet_infos)),  //
           std::move(bitstream)));
 
-      static auto clock = Clock::GetRealTimeClock();
       PERIODIC_STAT("Assembled Packets", packet_count, clock, 10);
       PERIODIC_STAT("Assembled Frames", 1, clock, 10);
       PERIODIC_STAT_AVG("Assembled FPS", 1, clock, 10);
