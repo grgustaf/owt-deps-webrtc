@@ -9,8 +9,10 @@
  */
 
 #include "rtc_base/logging.h"
+#include "system_wrappers/include/clock.h"
 
 #include <string.h>
+#include <iostream>
 
 #if RTC_LOG_ENABLED()
 
@@ -20,6 +22,10 @@
 #define snprintf _snprintf
 #endif
 #undef ERROR  // wingdi.h
+#endif
+
+#if defined(WEBRTC_WIN)
+#include <winuser.h>
 #endif
 
 #if defined(WEBRTC_MAC) && !defined(WEBRTC_IOS)
@@ -451,6 +457,24 @@ void LogMessage::FinishPrintStream() {
 
 namespace webrtc_logging_impl {
 
+static auto lclock = webrtc::Clock::GetRealTimeClock();
+static std::vector<std::string> vlog;
+static int64_t time_start = 0;
+
+void leading_zeroes(std::ostringstream &oss, int num, int width) {
+  // effects: prints num to oss ensuring width with leading zeroes
+  int zeroes = width;
+  int remain = num;
+  while (remain && zeroes) {
+    --zeroes;
+    remain /= 10;
+  }
+  for (int i = 0; i < zeroes; ++i) {
+    oss << "0";
+  }
+  oss << num;
+}
+
 void Log(const LogArgType* fmt, ...) {
   va_list args;
   va_start(args, fmt);
@@ -486,51 +510,65 @@ void Log(const LogArgType* fmt, ...) {
     return;
   }
 
-  LogMessage log_message(meta.meta.File(), meta.meta.Line(),
-                         meta.meta.Severity(), meta.err_ctx, meta.err);
-  if (tag) {
-    log_message.AddTag(tag);
+  if (meta.meta.Severity() != LoggingSeverity::LS_ERROR) {
+    va_end(args);
+    return;
   }
+
+  std::ostringstream log_message;
+
+  auto now_ms = lclock->TimeInMilliseconds();
+  if (!time_start) {
+    time_start = now_ms;
+  }
+  auto timestamp = now_ms - time_start;
+
+  // display timestamp with leading zeroes to align widths
+  log_message << "[";
+  leading_zeroes(log_message, timestamp / 1000, 3);
+  log_message << ".";
+  leading_zeroes(log_message, timestamp % 1000, 3);
+  log_message << "] ";
 
   for (++fmt; *fmt != LogArgType::kEnd; ++fmt) {
     switch (*fmt) {
       case LogArgType::kInt:
-        log_message.stream() << va_arg(args, int);
+        log_message << va_arg(args, int);
         break;
       case LogArgType::kLong:
-        log_message.stream() << va_arg(args, long);
+        log_message << va_arg(args, long);
         break;
       case LogArgType::kLongLong:
-        log_message.stream() << va_arg(args, long long);
+        log_message << va_arg(args, long long);
         break;
       case LogArgType::kUInt:
-        log_message.stream() << va_arg(args, unsigned);
+        log_message << va_arg(args, unsigned);
         break;
       case LogArgType::kULong:
-        log_message.stream() << va_arg(args, unsigned long);
+        log_message << va_arg(args, unsigned long);
         break;
       case LogArgType::kULongLong:
-        log_message.stream() << va_arg(args, unsigned long long);
+        log_message << va_arg(args, unsigned long long);
         break;
       case LogArgType::kDouble:
-        log_message.stream() << va_arg(args, double);
+        log_message << va_arg(args, double);
         break;
       case LogArgType::kLongDouble:
-        log_message.stream() << va_arg(args, long double);
+        log_message << va_arg(args, long double);
         break;
       case LogArgType::kCharP: {
         const char* s = va_arg(args, const char*);
-        log_message.stream() << (s ? s : "(null)");
+        log_message << (s ? s : "(null)");
         break;
       }
       case LogArgType::kStdString:
-        log_message.stream() << *va_arg(args, const std::string*);
+        log_message << *va_arg(args, const std::string*);
         break;
       case LogArgType::kStringView:
-        log_message.stream() << *va_arg(args, const absl::string_view*);
+        log_message << *va_arg(args, const absl::string_view*);
         break;
       case LogArgType::kVoidP:
-        log_message.stream() << rtc::ToHex(
+        log_message << rtc::ToHex(
             reinterpret_cast<uintptr_t>(va_arg(args, const void*)));
         break;
       default:
@@ -538,6 +576,21 @@ void Log(const LogArgType* fmt, ...) {
         va_end(args);
         return;
     }
+  }
+  std::cout << log_message.str() << std::endl;
+  vlog.push_back(log_message.str());
+
+  // quit after two minutes and dump log
+  if (timestamp > 2 * 60 * 1000) {
+    for (auto s : vlog) {
+      std::cout << s << std::endl;
+      vlog.clear();
+    }
+    std::cout << "EXITING!" << std::endl;
+#if defined(WEBRTC_WIN)
+    PostQuitMessage(1);
+#endif
+    exit(1);
   }
 
   va_end(args);
