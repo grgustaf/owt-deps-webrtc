@@ -60,20 +60,27 @@ FlexfecReceiver::~FlexfecReceiver() = default;
 void FlexfecReceiver::OnRtpPacket(const RtpPacketReceived& packet) {
   RTC_DCHECK_RUN_ON(&sequence_checker_);
 
+  static auto clock = Clock::GetRealTimeClock();
+
   // If this packet was recovered, it might be originating from
   // ProcessReceivedPacket in this object. To avoid lifetime issues with
   // |recovered_packets_|, we therefore break the cycle here.
   // This might reduce decoding efficiency a bit, since we can't disambiguate
   // recovered packets by RTX from recovered packets by FlexFEC.
-  if (packet.recovered())
+  if (packet.recovered()) {
+    PERIODIC_STAT("Flex Recovered", 1, clock, 10);
     return;
+  }
 
   std::unique_ptr<ForwardErrorCorrection::ReceivedPacket> received_packet =
       AddReceivedPacket(packet);
-  if (!received_packet)
+  if (!received_packet) {
+    PERIODIC_STAT("Flex Dropped Not Received", 1, clock, 10);
     return;
+  }
 
   ProcessReceivedPacket(*received_packet);
+  PERIODIC_STAT("Flex Received", 1, clock, 10);
 }
 
 FecPacketCounter FlexfecReceiver::GetPacketCounter() const {
@@ -149,10 +156,13 @@ void FlexfecReceiver::ProcessReceivedPacket(
   // Decode.
   erasure_code_->DecodeFec(received_packet, &recovered_packets_);
 
+  int returned = 0;
+
   // Return recovered packets through callback.
   for (const auto& recovered_packet : recovered_packets_) {
     RTC_CHECK(recovered_packet);
     if (recovered_packet->returned) {
+      ++returned;
       continue;
     }
     ++packet_counter_.num_recovered_packets;
@@ -173,6 +183,9 @@ void FlexfecReceiver::ProcessReceivedPacket(
       last_recovered_packet_ms_ = now_ms;
     }
   }
+
+  int added = recovered_packets_.size() - returned;
+  PERIODIC_STAT("Recovered Packets", added, clock_, 10);
 }
 
 }  // namespace webrtc

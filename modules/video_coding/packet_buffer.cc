@@ -104,6 +104,9 @@ PacketBuffer::InsertResult PacketBuffer::InsertPacket(
 
   if (buffer_[index] != nullptr) {
     // Duplicate packet, just delete the payload.
+    auto clock = Clock::GetRealTimeClock();
+    PERIODIC_STAT("Duplicate Video Packets", packet->payload_type == 96 ? 1:0, clock, 10);
+    PERIODIC_STAT("Duplicate FEC Packets", packet->payload_type == 109 ? 1:0, clock, 10);
     if (buffer_[index]->seq_num == packet->seq_num) {
       return result;
     }

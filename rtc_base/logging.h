@@ -683,4 +683,34 @@ inline const char* AdaptString(const std::string& str) {
 
 }  // namespace rtc
 
+#define PERIODIC_STAT_BEGIN(add, clk, period) \
+  { \
+    static int count = 0; \
+    static int total = 0; \
+    static int last_sec = 0; \
+    static int total_period = 0; \
+    count += add; \
+    total += add; \
+    int now_ms = clk->TimeInMilliseconds(); \
+    if (now_ms / 1000 / period > last_sec / period) { \
+      total_period += period;
+
+#define PERIODIC_STAT_END() \
+      count = 0; \
+      last_sec = now_ms / 1000; \
+    } \
+  }
+
+#define PERIODIC_STAT(label, add, clk, period) \
+  PERIODIC_STAT_BEGIN(add, clk, period) \
+      RTC_LOG(LS_ERROR) << label << ": " << count << " (" << \
+        "total " << total << ")"; \
+  PERIODIC_STAT_END()
+
+#define PERIODIC_STAT_AVG(label, add, clk, period) \
+  PERIODIC_STAT_BEGIN(add, clk, period) \
+      RTC_LOG(LS_ERROR) << label << ": " << count / period << " (" << \
+        "overall " << total / total_period << ")"; \
+  PERIODIC_STAT_END()
+
 #endif  // RTC_BASE_LOGGING_H_

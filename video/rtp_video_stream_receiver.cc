@@ -648,6 +648,8 @@ void RtpVideoStreamReceiver::OnRecoveredPacket(const uint8_t* rtp_packet,
 void RtpVideoStreamReceiver::OnRtpPacket(const RtpPacketReceived& packet) {
   RTC_DCHECK_RUN_ON(&worker_task_checker_);
 
+  PERIODIC_STAT("Video Packets", 1, clock_, 10);
+
   if (!receiving_) {
     return;
   }
@@ -742,11 +744,14 @@ void RtpVideoStreamReceiver::OnInsertedPacket(
   std::vector<rtc::ArrayView<const uint8_t>> payloads;
   RtpPacketInfos::vector_type packet_infos;
 
+  int packet_count = 0;
+
   bool frame_boundary = true;
   for (auto& packet : result.packets) {
     // PacketBuffer promisses frame boundaries are correctly set on each
     // packet. Document that assumption with the DCHECKs.
     RTC_DCHECK_EQ(frame_boundary, packet->is_first_packet_in_frame());
+    ++packet_count;
     if (packet->is_first_packet_in_frame()) {
       first_packet = packet.get();
       max_nack_count = packet->times_nacked;
@@ -795,6 +800,11 @@ void RtpVideoStreamReceiver::OnInsertedPacket(
           last_packet.video_header.color_space,     //
           RtpPacketInfos(std::move(packet_infos)),  //
           std::move(bitstream)));
+
+      static auto clock = Clock::GetRealTimeClock();
+      PERIODIC_STAT("Assembled Packets", packet_count, clock, 10);
+      PERIODIC_STAT("Assembled Frames", 1, clock, 10);
+      PERIODIC_STAT_AVG("Assembled FPS", 1, clock, 10);
     }
   }
   RTC_DCHECK(frame_boundary);
