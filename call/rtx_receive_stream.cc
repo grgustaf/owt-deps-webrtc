@@ -41,6 +41,8 @@ RtxReceiveStream::RtxReceiveStream(
 RtxReceiveStream::~RtxReceiveStream() = default;
 
 void RtxReceiveStream::OnRtpPacket(const RtpPacketReceived& rtx_packet) {
+  rtx_packet.Log("RTX");
+
   if (rtp_receive_statistics_) {
     rtp_receive_statistics_->OnRtpPacket(rtx_packet);
   }
@@ -74,6 +76,7 @@ void RtxReceiveStream::OnRtpPacket(const RtpPacketReceived& rtx_packet) {
 
   memcpy(media_payload, rtx_payload.data(), rtx_payload.size());
 
+  media_packet.LogRecovered();
   media_sink_->OnRtpPacket(media_packet);
 }
 

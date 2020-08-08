@@ -105,6 +105,8 @@ FlexfecReceiver::AddReceivedPacket(const RtpPacketReceived& packet) {
   received_packet->seq_num = packet.SequenceNumber();
   received_packet->ssrc = packet.Ssrc();
   if (received_packet->ssrc == ssrc_) {
+    packet.Log("Real FEC");
+
     // This is a FlexFEC packet.
     if (packet.payload_size() < kMinFlexfecHeaderSize) {
       RTC_LOG(LS_WARNING) << "Truncated FlexFEC packet, discarding.";

@@ -458,7 +458,6 @@ void LogMessage::FinishPrintStream() {
 namespace webrtc_logging_impl {
 
 static auto lclock = webrtc::Clock::GetRealTimeClock();
-static std::vector<std::string> vlog;
 static int64_t time_start = 0;
 
 void leading_zeroes(std::ostringstream &oss, int num, int width) {
@@ -578,14 +577,9 @@ void Log(const LogArgType* fmt, ...) {
     }
   }
   std::cout << log_message.str() << std::endl;
-  vlog.push_back(log_message.str());
 
   // quit after two minutes and dump log
   if (timestamp > 2 * 60 * 1000) {
-    for (auto s : vlog) {
-      std::cout << s << std::endl;
-      vlog.clear();
-    }
     std::cout << "EXITING!" << std::endl;
 #if defined(WEBRTC_WIN)
     PostQuitMessage(1);

@@ -33,6 +33,15 @@ class RtpPacketReceived : public RtpPacket {
 
   ~RtpPacketReceived();
 
+  static std::string MakeId(int type, int seq);
+  static void ReportMissing(int type, int seq);
+
+  static std::map<std::string, int> sMapMissing;
+
+  std::string GetId() const;
+  void Log(const char *label) const;
+  void LogRecovered() const;
+
   // TODO(danilchap): Remove this function when all code update to use RtpPacket
   // directly. Function is there just for easier backward compatibilty.
   void GetHeader(RTPHeader* header) const;

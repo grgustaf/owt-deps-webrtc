@@ -17,6 +17,7 @@
 
 #include "modules/rtp_rtcp/source/rtp_header_extensions.h"
 #include "rtc_base/numerics/safe_conversions.h"
+#include "rtc_base/logging.h"
 
 namespace webrtc {
 
@@ -32,6 +33,45 @@ RtpPacketReceived& RtpPacketReceived::operator=(RtpPacketReceived&& packet) =
     default;
 
 RtpPacketReceived::~RtpPacketReceived() {}
+
+std::string RtpPacketReceived::MakeId(int type, int seq) {
+    std::ostringstream id;
+    id << type << "-" << seq;
+    return id.str();
+}
+
+std::string RtpPacketReceived::GetId() const {
+    return MakeId(this->PayloadType(), this->SequenceNumber());
+}
+
+void RtpPacketReceived::Log(const char *label) const {
+    static std::map<int, int> packetCounts;
+    int type = this->PayloadType();
+    RTC_LOG(LS_ERROR) << label << " " << this->GetId() <<
+        " (#" << ++packetCounts[type] << ")";
+}
+
+std::map<std::string, int> RtpPacketReceived::sMapMissing;
+
+void RtpPacketReceived::ReportMissing(int type, int seq) {
+    static auto clock = Clock::GetRealTimeClock();
+    auto id = MakeId(type, seq);
+    sMapMissing[id] = clock->TimeInMilliseconds();
+    RTC_LOG(LS_ERROR) << "Missing packet: " << id;
+}
+
+void RtpPacketReceived::LogRecovered() const {
+    static auto clock = Clock::GetRealTimeClock();
+
+    int64_t expected = sMapMissing[GetId()];
+    if (expected) {
+        int64_t elapsed = clock->TimeInMilliseconds() - expected;
+        RTC_LOG(LS_ERROR) << "RTX packet arrived after " << elapsed << " ms.";
+    }
+    else {
+        RTC_LOG(LS_ERROR) << "Unexpected RTX packet";
+    }
+}
 
 void RtpPacketReceived::GetHeader(RTPHeader* header) const {
   header->markerBit = Marker();

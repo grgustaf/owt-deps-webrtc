@@ -648,6 +648,7 @@ void RtpVideoStreamReceiver::OnRecoveredPacket(const uint8_t* rtp_packet,
 void RtpVideoStreamReceiver::OnRtpPacket(const RtpPacketReceived& packet) {
   RTC_DCHECK_RUN_ON(&worker_task_checker_);
 
+  packet.Log("Video");
   PERIODIC_STAT("Video Packets", 1, clock_, 10);
 
   if (!receiving_) {
@@ -655,6 +656,21 @@ void RtpVideoStreamReceiver::OnRtpPacket(const RtpPacketReceived& packet) {
   }
 
   if (!packet.recovered()) {
+    // if there is a gap in video packets, report missing packets
+    static int32_t last_seq = -1;
+    auto seq = packet.SequenceNumber();
+    if (last_seq >= 0) {
+      uint16_t expected = (last_seq + 1) & 0xffff;
+      auto type = packet.PayloadType();
+
+      // NOTE: this will not work well if there is reordering
+      while (expected != seq) {
+        packet.ReportMissing(type, expected);
+        expected = (expected + 1) & 0xffff;
+      }
+    }
+    last_seq = seq;
+
     // TODO(nisse): Exclude out-of-order packets?
     int64_t now_ms = clock_->TimeInMilliseconds();
     {
