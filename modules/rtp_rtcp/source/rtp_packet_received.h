@@ -36,7 +36,8 @@ class RtpPacketReceived : public RtpPacket {
   static std::string MakeId(int type, int seq);
   static void ReportMissing(int type, int seq);
 
-  static std::map<std::string, int> sMapMissing;
+  static std::map<std::string, int64_t> sMapMissing;
+  static webrtc::Clock *sClock;
 
   std::string GetId() const;
   void Log(const char *label) const;
