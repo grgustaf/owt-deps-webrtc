@@ -409,6 +409,7 @@ void ForwardErrorCorrection::InsertFecPacket(
   for (const auto& existing_fec_packet : received_fec_packets_) {
     RTC_DCHECK_EQ(existing_fec_packet->ssrc, received_packet.ssrc);
     if (existing_fec_packet->seq_num == received_packet.seq_num) {
+      RTC_LOG(LS_ERROR) << "Duplicate FEC packet received: " << received_packet.seq_num;
       // Drop duplicate FEC packet data.
       return;
     }
@@ -437,6 +438,9 @@ void ForwardErrorCorrection::InsertFecPacket(
     return;
   }
 
+  std::ostringstream oss;
+  oss << "FEC packet " << fec_packet->seq_num << " protects";
+
   // Parse packet mask from header and represent as protected packets.
   for (uint16_t byte_idx = 0; byte_idx < fec_packet->packet_mask_size;
        ++byte_idx) {
@@ -451,10 +455,13 @@ void ForwardErrorCorrection::InsertFecPacket(
         protected_packet->seq_num = static_cast<uint16_t>(
             fec_packet->seq_num_base + (byte_idx << 3) + bit_idx);
         protected_packet->pkt = nullptr;
+        oss << " " << protected_packet->seq_num;
         fec_packet->protected_packets.push_back(std::move(protected_packet));
       }
     }
   }
+
+  RTC_LOG(LS_ERROR) << oss.str();
 
   if (fec_packet->protected_packets.empty()) {
     // All-zero packet mask; we can discard this FEC packet.
@@ -666,8 +673,16 @@ bool ForwardErrorCorrection::RecoverPacket(const ReceivedFecPacket& fec_packet,
 
 void ForwardErrorCorrection::AttemptRecovery(
     RecoveredPacketList* recovered_packets) {
+  static int recovery_iterations = 0;
+  static int discarded_unused = 0;
+
+  int iterations = 0;
+  int discarded = 0;
+
   auto fec_packet_it = received_fec_packets_.begin();
   while (fec_packet_it != received_fec_packets_.end()) {
+    ++iterations;
+
     // Search for each FEC packet's protected media packets.
     int packets_missing = NumCoveredPacketsMissing(**fec_packet_it);
 
@@ -681,6 +696,8 @@ void ForwardErrorCorrection::AttemptRecovery(
         fec_packet_it = received_fec_packets_.erase(fec_packet_it);
         continue;
       }
+
+      RTC_LOG(LS_ERROR) << "Packet " << recovered_packet->seq_num << " recovered by FEC";
 
       auto* recovered_packet_ptr = recovered_packet.get();
       // Add recovered packet to the list of recovered packets and update any
@@ -702,9 +719,19 @@ void ForwardErrorCorrection::AttemptRecovery(
       // Either all protected packets arrived or have been recovered. We can
       // discard this FEC packet.
       fec_packet_it = received_fec_packets_.erase(fec_packet_it);
+      ++discarded;
     } else {
       fec_packet_it++;
     }
+  }
+
+  recovery_iterations += iterations;
+  discarded_unused += discarded;
+
+  if (iterations || discarded) {
+    RTC_LOG(LS_ERROR) << "Recovery attempt iters: +" << iterations << " = " <<
+      recovery_iterations << ", discarded unused: +" << discarded_unused << " = " <<
+      discarded_unused;
   }
 }
 
