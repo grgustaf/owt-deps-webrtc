@@ -460,20 +460,6 @@ namespace webrtc_logging_impl {
 static auto lclock = webrtc::Clock::GetRealTimeClock();
 static int64_t time_start = 0;
 
-void leading_zeroes(std::ostringstream &oss, int num, int width) {
-  // effects: prints num to oss ensuring width with leading zeroes
-  int zeroes = width;
-  int remain = num;
-  while (remain && zeroes) {
-    --zeroes;
-    remain /= 10;
-  }
-  for (int i = 0; i < zeroes; ++i) {
-    oss << "0";
-  }
-  oss << num;
-}
-
 void Log(const LogArgType* fmt, ...) {
   va_list args;
   va_start(args, fmt);
@@ -523,11 +509,9 @@ void Log(const LogArgType* fmt, ...) {
   auto timestamp = now_ms - time_start;
 
   // display timestamp with leading zeroes to align widths
-  log_message << "[";
-  leading_zeroes(log_message, timestamp / 1000, 3);
-  log_message << ".";
-  leading_zeroes(log_message, timestamp % 1000, 3);
-  log_message << "] ";
+  log_message << "[" << rtc::LeftPad('0', 3, rtc::ToString(timestamp / 1000))
+              << "." << rtc::LeftPad('0', 3, rtc::ToString(timestamp % 1000))
+              << "] ";
 
   for (++fmt; *fmt != LogArgType::kEnd; ++fmt) {
     switch (*fmt) {
