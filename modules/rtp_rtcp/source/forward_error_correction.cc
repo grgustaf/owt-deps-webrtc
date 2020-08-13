@@ -697,7 +697,7 @@ void ForwardErrorCorrection::AttemptRecovery(
         continue;
       }
 
-      RTC_LOG(LS_ERROR) << "Packet " << recovered_packet->seq_num << " recovered by FEC";
+      RTC_LOG(LS_ERROR) << "Packet recovered by FEC: " << recovered_packet->seq_num;
 
       auto* recovered_packet_ptr = recovered_packet.get();
       // Add recovered packet to the list of recovered packets and update any
@@ -728,11 +728,13 @@ void ForwardErrorCorrection::AttemptRecovery(
   recovery_iterations += iterations;
   discarded_unused += discarded;
 
+/*
   if (iterations || discarded) {
     RTC_LOG(LS_ERROR) << "Recovery attempt iters: +" << iterations << " = " <<
       recovery_iterations << ", discarded unused: +" << discarded_unused << " = " <<
       discarded_unused;
   }
+  */
 }
 
 int ForwardErrorCorrection::NumCoveredPacketsMissing(

@@ -54,20 +54,21 @@ void RtpPacketReceived::Log(const char *label) const {
 std::map<std::string, int64_t> RtpPacketReceived::sMapMissing;
 Clock *RtpPacketReceived::sClock = Clock::GetRealTimeClock();
 
-void RtpPacketReceived::ReportMissing(int type, int seq) {
+void RtpPacketReceived::ReportMissing(const char *label, int type, int seq) {
     auto id = MakeId(type, seq);
     sMapMissing[id] = sClock->TimeInMilliseconds();
-    RTC_LOG(LS_ERROR) << "Missing packet: " << id;
+    RTC_LOG(LS_ERROR) << label << " " << id << "        MISSING";
 }
 
 void RtpPacketReceived::LogRecovered() const {
-    int64_t expected = sMapMissing[GetId()];
+    auto id = GetId();
+    int64_t expected = sMapMissing[id];
     if (expected) {
         int64_t elapsed = sClock->TimeInMilliseconds() - expected;
-        RTC_LOG(LS_ERROR) << "RTX packet arrived after " << elapsed << " ms.";
+        RTC_LOG(LS_ERROR) << "RTX for " << id << " arrived after " << elapsed << " ms";
     }
     else {
-        RTC_LOG(LS_ERROR) << "Unexpected RTX packet";
+        RTC_LOG(LS_ERROR) << "Unexpected RTX packet for " << id;
     }
 }
 

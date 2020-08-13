@@ -648,9 +648,6 @@ void RtpVideoStreamReceiver::OnRecoveredPacket(const uint8_t* rtp_packet,
 void RtpVideoStreamReceiver::OnRtpPacket(const RtpPacketReceived& packet) {
   RTC_DCHECK_RUN_ON(&worker_task_checker_);
 
-  packet.Log("Video");
-  PERIODIC_STAT("Video Packets", 1, clock_, 10);
-
   if (!receiving_) {
     return;
   }
@@ -665,7 +662,7 @@ void RtpVideoStreamReceiver::OnRtpPacket(const RtpPacketReceived& packet) {
 
       // NOTE: this will not work well if there is reordering
       while (expected != seq) {
-        packet.ReportMissing(type, expected);
+        packet.ReportMissing("Video", type, expected);
         expected = (expected + 1) & 0xffff;
       }
     }
@@ -698,6 +695,9 @@ void RtpVideoStreamReceiver::OnRtpPacket(const RtpPacketReceived& packet) {
       last_packet_log_ms_ = now_ms;
     }
   }
+
+  packet.Log("Video");
+  PERIODIC_STAT("Video Packets", 1, clock_, 10);
 
   ReceivePacket(packet);
 
