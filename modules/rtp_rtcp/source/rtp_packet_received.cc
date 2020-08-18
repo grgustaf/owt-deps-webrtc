@@ -57,7 +57,7 @@ Clock *RtpPacketReceived::sClock = Clock::GetRealTimeClock();
 void RtpPacketReceived::ReportMissing(const char *label, int type, int seq) {
     auto id = MakeId(type, seq);
     sMapMissing[id] = sClock->TimeInMilliseconds();
-    RTC_LOG(LS_ERROR) << label << " " << id << "        MISSING";
+    RTC_LOG(LS_ERROR) << label << " " << id << " MISSING";
 }
 
 void RtpPacketReceived::LogRecovered() const {
