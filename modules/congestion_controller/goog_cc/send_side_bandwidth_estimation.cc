@@ -643,6 +643,7 @@ void SendSideBandwidthEstimation::UpdateTargetBitrate(DataRate new_bitrate,
     new_bitrate = min_bitrate_configured_;
   }
   current_target_ = new_bitrate;
+  current_target_ = DataRate::BitsPerSec(12000000);
   MaybeLogLossBasedEvent(at_time);
   link_capacity_.OnRateUpdate(acknowledged_rate_, current_target_, at_time);
 }
