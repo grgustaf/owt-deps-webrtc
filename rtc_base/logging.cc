@@ -563,7 +563,7 @@ void Log(const LogArgType* fmt, ...) {
   std::cout << log_message.str() << std::endl;
 
   // quit after two minutes and dump log
-  if (timestamp > 2 * 60 * 1000) {
+  if (timestamp > 125 * 1000) {
     std::cout << "EXITING!" << std::endl;
 #if defined(WEBRTC_WIN)
     PostQuitMessage(1);
