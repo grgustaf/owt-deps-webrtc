@@ -45,7 +45,7 @@ int32_t AudioDeviceGeneric::EnableBuiltInNS(bool enable) {
 }
 
 int32_t AudioDeviceGeneric::GetPlayoutUnderrunCount() const {
-  RTC_LOG_F(LS_ERROR) << "Not supported on this platform";
+  RTC_LOG_F(LS_WARNING) << "Not supported on this platform";
   return -1;
 }
 
