@@ -296,7 +296,8 @@ std::vector<uint16_t> NackModule::GetNackBatch(NackFilterOptions options) {
   std::vector<uint16_t> nack_batch;
   auto it = nack_list_.begin();
   while (it != nack_list_.end()) {
-    TimeDelta resend_delay = TimeDelta::Millis(rtt_ms_);
+    // increase NACK frequency to recover from lost NACK or RTX packets
+    TimeDelta resend_delay = TimeDelta::Millis(rtt_ms_ / 3);
     if (backoff_settings_) {
       resend_delay =
           std::max(resend_delay, backoff_settings_->min_retry_interval);
