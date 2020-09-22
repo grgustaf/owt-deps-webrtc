@@ -101,6 +101,9 @@ FlexfecSender::FlexfecSender(
   // This object should not have been instantiated if FlexFEC is disabled.
   RTC_DCHECK_GE(payload_type, 0);
   RTC_DCHECK_LE(payload_type, 127);
+
+  RTC_LOG(LS_ERROR) << "FFS CONSTRUCTOR";
+
 }
 
 FlexfecSender::~FlexfecSender() = default;
@@ -114,6 +117,8 @@ void FlexfecSender::SetProtectionParameters(
 }
 
 void FlexfecSender::AddPacketAndGenerateFec(const RtpPacketToSend& packet) {
+  RTC_LOG(LS_ERROR) << "FFS: ADD PACKET AND GENERATE";
+
   // TODO(brandtr): Generalize this SSRC check when we support multistream
   // protection.
   RTC_DCHECK_EQ(packet.Ssrc(), protected_media_ssrc_);

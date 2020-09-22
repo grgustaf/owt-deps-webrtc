@@ -23,6 +23,7 @@
 #include "modules/rtp_rtcp/source/rtp_utility.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/critical_section.h"
+#include "rtc_base/logging.h"
 
 namespace webrtc {
 
@@ -97,6 +98,7 @@ UlpfecGenerator::~UlpfecGenerator() = default;
 void UlpfecGenerator::SetProtectionParameters(
     const FecProtectionParams& delta_params,
     const FecProtectionParams& key_params) {
+  RTC_LOG(LS_ERROR) << "GRG: SetProtectionParameters";
   RTC_DCHECK_GE(delta_params.fec_rate, 0);
   RTC_DCHECK_LE(delta_params.fec_rate, 255);
   RTC_DCHECK_GE(key_params.fec_rate, 0);
@@ -110,6 +112,8 @@ void UlpfecGenerator::SetProtectionParameters(
 void UlpfecGenerator::AddPacketAndGenerateFec(const RtpPacketToSend& packet) {
   RTC_DCHECK_RUNS_SERIALIZED(&race_checker_);
   RTC_DCHECK(generated_fec_packets_.empty());
+
+  RTC_LOG(LS_ERROR) << "ADD PACKET AND GENERATE";
 
   if (media_packets_.empty()) {
     rtc::CritScope cs(&crit_);
@@ -159,7 +163,15 @@ void UlpfecGenerator::AddPacketAndGenerateFec(const RtpPacketToSend& packet) {
     // We are not using Unequal Protection feature of the parity erasure code.
     constexpr int kNumImportantPackets = 0;
     constexpr bool kUseUnequalProtection = false;
-    fec_->EncodeFec(media_packets_, params.fec_rate, kNumImportantPackets,
+
+    int fec_rate = keyframe_in_process_ ? 192:192;
+    if (keyframe_in_process_) {
+      RTC_LOG(LS_ERROR) << "SPP should be K:" << current_params_.keyframe_params.fec_rate;
+    }
+    else {
+      RTC_LOG(LS_ERROR) << "SPP should be D:" << current_params_.delta_params.fec_rate;
+    }
+    fec_->EncodeFec(media_packets_, fec_rate, kNumImportantPackets,
                     kUseUnequalProtection, params.fec_mask_type,
                     &generated_fec_packets_);
     if (generated_fec_packets_.empty()) {

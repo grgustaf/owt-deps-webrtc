@@ -20,7 +20,7 @@
 #include "rtc_base/logging.h"
 #include "system_wrappers/include/field_trial.h"
 
-extern unsigned int GRG_nack_divisor;
+unsigned int GRG_nack_divisor = 1;
 
 namespace webrtc {
 
@@ -40,7 +40,7 @@ int64_t GetSendNackDelay() {
       webrtc::field_trial::FindFullName("WebRTC-SendNackDelayMs").c_str(),
       nullptr, 10);
   if (delay_ms > 0 && delay_ms <= 20) {
-    RTC_LOG(LS_INFO) << "SendNackDelay is set to " << delay_ms;
+//    RTC_LOG(LS_ERROR) << "SendNackDelay is set to " << delay_ms;
     return delay_ms;
   }
   return kDefaultSendNackDelayMs;
@@ -83,7 +83,12 @@ NackModule::BackoffSettings::ParseFromFieldTrials() {
   ParseFieldTrial({&enabled, &min_retry, &max_rtt, &base},
                   field_trial::FindFullName("WebRTC-ExponentialNackBackoff"));
 
+/*
+  RTC_LOG(LS_ERROR) << "BACKOFF: retry " << min_retry.Get().ms() << ", max rtt " <<
+    max_rtt.Get().ms() << ", base " << base.Get();
+*/
   if (enabled) {
+//    RTC_LOG(LS_ERROR) << "BACKOFF: ENABLED";
     return NackModule::BackoffSettings(min_retry.Get(), max_rtt.Get(),
                                        base.Get());
   }
@@ -135,6 +140,12 @@ int NackModule::OnReceivedPacket(uint16_t seq_num,
   if (seq_num == newest_seq_num_)
     return 0;
 
+/*
+  if (is_keyframe) {
+    RTC_LOG(LS_ERROR) << " KeyFrame: " << seq_num;
+  }
+*/
+
   if (AheadOf(newest_seq_num_, seq_num)) {
     // An out of order packet has been received.
     auto nack_list_it = nack_list_.find(seq_num);
@@ -177,6 +188,13 @@ int NackModule::OnReceivedPacket(uint16_t seq_num,
   if (!nack_batch.empty()) {
     // This batch of NACKs is triggered externally; the initiator can
     // batch them with other feedback messages.
+/*
+    std::ostringstream oss;
+    for (auto nack : nack_batch) {
+      oss << " " << nack;
+    }
+//    RTC_LOG(LS_ERROR) << "(Received) NACKING:" << oss.str();
+*/
     nack_sender_->SendNack(nack_batch, /*buffering_allowed=*/true);
   }
 
@@ -220,6 +238,11 @@ void NackModule::Process() {
     if (!nack_batch.empty()) {
       // This batch of NACKs is triggered externally; there is no external
       // initiator who can batch them with other feedback messages.
+      std::ostringstream oss;
+      for (auto nack : nack_batch) {
+        oss << " " << nack;
+      }
+//      RTC_LOG(LS_ERROR) << "(Process) NACKING:" << oss.str();
       nack_sender_->SendNack(nack_batch, /*buffering_allowed=*/false);
     }
   }
@@ -303,10 +326,10 @@ std::vector<uint16_t> NackModule::GetNackBatch(NackFilterOptions options) {
     if (backoff_settings_) {
       resend_delay =
           std::max(resend_delay, backoff_settings_->min_retry_interval);
-      if (it->second.retries > 1) {
+      if (it->second.retries > 3) {
         TimeDelta exponential_backoff =
             std::min(TimeDelta::Millis(rtt_ms_), backoff_settings_->max_rtt) *
-            std::pow(backoff_settings_->base, it->second.retries - 1);
+            std::pow(backoff_settings_->base, it->second.retries - 3);
         resend_delay = std::max(resend_delay, exponential_backoff);
       }
     }

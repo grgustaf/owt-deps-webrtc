@@ -647,6 +647,14 @@ int32_t ModuleRtpRtcpImpl::SendNACK(const uint16_t* nack_list,
 
 void ModuleRtpRtcpImpl::SendNack(
     const std::vector<uint16_t>& sequence_numbers) {
+  std::ostringstream oss;
+/*
+  oss << "Send RTCP NACK:";
+  for (auto sn : sequence_numbers) {
+    oss << " " << sn;
+  }
+  RTC_LOG(LS_ERROR) << oss.str();
+  */
   rtcp_sender_.SendRTCP(GetFeedbackState(), kRtcpNack, sequence_numbers.size(),
                         sequence_numbers.data());
 }

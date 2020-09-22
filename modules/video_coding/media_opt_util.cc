@@ -21,6 +21,7 @@
 #include "rtc_base/checks.h"
 #include "rtc_base/experiments/rate_control_settings.h"
 #include "rtc_base/numerics/safe_conversions.h"
+#include "rtc_base/logging.h"
 
 namespace webrtc {
 // Max value of loss rates in off-line model
@@ -217,6 +218,10 @@ bool VCMNackFecMethod::UpdateParameters(
   // the actual one
   _protectionFactorK = VCMFecMethod::ConvertFECRate(_protectionFactorK);
   _protectionFactorD = VCMFecMethod::ConvertFECRate(_protectionFactorD);
+
+  RTC_LOG(LS_ERROR) << "Protection should have been K:" << _protectionFactorK << " D:" << _protectionFactorD;
+  _protectionFactorK = 192;
+  _protectionFactorK = 64;
 
   return true;
 }
