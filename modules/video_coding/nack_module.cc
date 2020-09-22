@@ -20,6 +20,8 @@
 #include "rtc_base/logging.h"
 #include "system_wrappers/include/field_trial.h"
 
+extern unsigned int GRG_nack_divisor;
+
 namespace webrtc {
 
 namespace {
@@ -297,7 +299,7 @@ std::vector<uint16_t> NackModule::GetNackBatch(NackFilterOptions options) {
   auto it = nack_list_.begin();
   while (it != nack_list_.end()) {
     // increase NACK frequency to recover from lost NACK or RTX packets
-    TimeDelta resend_delay = TimeDelta::Millis(rtt_ms_ / 3);
+    TimeDelta resend_delay = TimeDelta::Millis(rtt_ms_ / GRG_nack_divisor);
     if (backoff_settings_) {
       resend_delay =
           std::max(resend_delay, backoff_settings_->min_retry_interval);
